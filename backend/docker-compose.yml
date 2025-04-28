@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: DockerConf/Dockerfiles/Dockerfile.db_postgres
+    image: db_postgres_aos
+    container_name: aos-db
+    environment:
+      POSTGRES_DB: aos_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: AoS2025!
+      PGPORT: 5435
+    ports:
+      - "5435:5435"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: DockerConf/Dockerfiles/Dockerfile.backend
+    image: backend-app
+    container_name: aos-backend
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      # Point Spring to the mounted config dir
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/config/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5435/aos_tracker
+    ports:
+      - "1262:1262"
+    volumes:
+      # mount your host config/ into the container
+      - ./config:/config:ro
+
+volumes:
+  db-data:
