@@ -29,9 +29,10 @@ VOLUME /tmp
 
 # bring in the fat-jar from the builder stage
 COPY --from=builder /home/gradle/project/build/libs/*.jar app.jar
+COPY config/ /config/
 
 # match your server.port
 EXPOSE 1262
 
 # use container-aware JVM flags
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Dspring.config.additional-location=file:/config/", "-jar", "app.jar"]
