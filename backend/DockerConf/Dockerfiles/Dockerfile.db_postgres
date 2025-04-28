@@ -1,0 +1,21 @@
+FROM postgres:17.4
+
+# Create directories for temporary SQL storage
+RUN mkdir -p /temp-sql
+
+# Copy SQL scripts for each component under the application directory
+COPY src/main/resources/db/changelog/*.sql /temp-sql/
+
+ARG DATABASE_COMPONENTS
+
+RUN set -eux; \
+    LETTER_CODE=97; \
+    for file in /temp-sql/*.sql; do \
+      CHAR=$(printf '%c' "$LETTER_CODE"); \
+      echo "Copying $file → /docker-entrypoint-initdb.d/${CHAR}.sql"; \
+      cp "$file" "/docker-entrypoint-initdb.d/${CHAR}.sql"; \
+      LETTER_CODE=$((LETTER_CODE + 1)); \
+    done; \
+    rm -rf /temp-sql
+
+CMD ["postgres"]

@@ -1,0 +1,37 @@
+# ────────────────────────────────────────────────────────────────
+# Stage 1: build the Spring Boot fat‐jar via Gradle
+# ────────────────────────────────────────────────────────────────
+FROM gradle:7.6-jdk17 AS builder
+
+# inside the container, work in /home/gradle/project
+WORKDIR /home/gradle/project
+
+# copy only what Gradle needs to assemble the build
+COPY build.gradle.kts settings.gradle.kts gradle.* ./
+COPY gradle gradle
+
+# copy your application sources
+COPY src src
+
+# build the jar (skipping tests; remove -x test to run them)
+RUN gradle bootJar --no-daemon -x test
+
+# ────────────────────────────────────────────────────────────────
+# Stage 2: run it on a slim JRE base
+# ────────────────────────────────────────────────────────────────
+FROM eclipse-temurin:17-jre-jammy
+
+LABEL maintainer="you@example.com"
+WORKDIR /app
+
+# optionally expose /tmp (Spring Boot uses it)
+VOLUME /tmp
+
+# bring in the fat-jar from the builder stage
+COPY --from=builder /home/gradle/project/build/libs/*.jar app.jar
+
+# match your server.port
+EXPOSE 1262
+
+# use container-aware JVM flags
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
